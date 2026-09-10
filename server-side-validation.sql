@@ -1,0 +1,18 @@
+DECLARE
+    v_elapsed NUMBER;
+BEGIN
+    IF :P18_HONEYPOT IS NOT NULL THEN
+        RETURN FALSE;
+    END IF;
+
+    v_elapsed := (SYSDATE - TO_DATE(:P18_FORM_TS,'YYYYMMDDHH24MISS')) * 86400;
+    IF v_elapsed < 3 THEN
+        RETURN FALSE;
+    END IF;
+
+    IF NOT pkg_captcha.verify_answer(TO_NUMBER(:P18_CAPTCHA_INPUT), :P18_CAPTCHA_SALT, :P18_CAPTCHA_HASH) THEN
+        RETURN FALSE;
+    END IF;
+
+    RETURN TRUE;
+END;
