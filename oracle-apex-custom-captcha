@@ -1,0 +1,57 @@
+CREATE OR REPLACE PACKAGE pkg_captcha AS
+
+    FUNCTION generate_challenge(
+        p_a OUT NUMBER,
+        p_b OUT NUMBER
+    ) RETURN VARCHAR2;
+
+    FUNCTION hash_answer(
+        p_answer IN NUMBER,
+        p_salt IN VARCHAR2
+    ) RETURN VARCHAR2;
+
+    FUNCTION verify_answer(
+        p_answer IN NUMBER,
+        p_salt IN VARCHAR2,
+        p_hash IN VARCHAR2
+    ) RETURN BOOLEAN;
+
+END pkg_captcha;
+/
+
+CREATE OR REPLACE PACKAGE BODY pkg_captcha AS
+
+    FUNCTION generate_challenge(
+        p_a OUT NUMBER,
+        p_b OUT NUMBER
+    ) RETURN VARCHAR2 IS
+    BEGIN
+        p_a := TRUNC(DBMS_RANDOM.VALUE(1,10));
+        p_b := TRUNC(DBMS_RANDOM.VALUE(1,10));
+        RETURN p_a || ' + ' || p_b || ' = ?';
+    END generate_challenge;
+
+    FUNCTION hash_answer(
+        p_answer IN NUMBER,
+        p_salt IN VARCHAR2
+    ) RETURN VARCHAR2 IS
+        v_hash VARCHAR2(64);
+    BEGIN
+        SELECT STANDARD_HASH(p_answer || p_salt || V('APP_CAPTCHA_SECRET'), 'SHA256')
+        INTO v_hash
+        FROM dual;
+
+        RETURN v_hash;
+    END hash_answer;
+
+    FUNCTION verify_answer(
+        p_answer IN NUMBER,
+        p_salt IN VARCHAR2,
+        p_hash IN VARCHAR2
+    ) RETURN BOOLEAN IS
+    BEGIN
+        RETURN hash_answer(p_answer, p_salt) = p_hash;
+    END verify_answer;
+
+END pkg_captcha;
+/
